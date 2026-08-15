@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/summary-artifact.schema.json",
+  "title": "Summary artifact",
+  "type": "object",
+  "required": ["request_id", "summary", "source_ids", "status"],
+  "properties": {
+    "request_id": {"type": "string"},
+    "summary": {"type": "string"},
+    "source_ids": {"type": "array", "items": {"type": "string"}},
+    "status": {"type": "string", "enum": ["draft", "reviewed"]}
+  },
+  "additionalProperties": false
+}

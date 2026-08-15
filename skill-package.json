@@ -1,0 +1,17 @@
+{
+  "package_name": "contract-first-delivery-skill",
+  "skill_name": "contract-first-delivery",
+  "version": "1.0.0",
+  "license": "MIT",
+  "source_provenance": {
+    "kind": "generalized-project-practice",
+    "scope": "contract-first workflow and deterministic example checks"
+  },
+  "evidence_ceiling": "Bundled fixtures and deterministic checks establish structural completeness only; they do not prove semantic truth or production readiness.",
+  "entrypoints": {
+    "skill": ".codex/skills/contract-first-delivery/SKILL.md",
+    "validator": "scripts/validate_contract_package.py",
+    "tests": "tests/run_tests.py",
+    "reference": ".codex/skills/contract-first-delivery/references/REFERENCE.md"
+  }
+}

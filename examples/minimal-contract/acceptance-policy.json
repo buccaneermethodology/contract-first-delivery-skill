@@ -1,0 +1,10 @@
+{
+  "blocking_checks": [
+    {"id": "schema", "rule": "The example and golden artifact satisfy artifact.schema.json."},
+    {"id": "provenance", "rule": "The golden is manually reviewed and is not generated from the candidate."}
+  ],
+  "advisory_checks": [
+    {"id": "wording", "rule": "Review concise wording for the target audience."}
+  ],
+  "claim_ceiling": "Passing checks establishes structural completeness and declared relationships only, not semantic truth or production readiness."
+}

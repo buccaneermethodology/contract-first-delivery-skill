@@ -1,0 +1,6 @@
+{
+  "request_id": "REQ-001",
+  "summary": "The request has a bounded draft ready for human review.",
+  "source_ids": ["SRC-001"],
+  "status": "draft"
+}

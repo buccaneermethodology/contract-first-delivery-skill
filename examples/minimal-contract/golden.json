@@ -1,0 +1,19 @@
+{
+  "oracle_type": "manual",
+  "source_provenance": {
+    "source_id": "SRC-001",
+    "source_kind": "representative-input",
+    "manual_reviewed": true,
+    "generated_from_candidate": false
+  },
+  "decision_notes": [
+    "The status remains draft because generation does not confer approval.",
+    "The source identifier is preserved for review."
+  ],
+  "artifact": {
+    "request_id": "REQ-001",
+    "summary": "The request has a bounded draft ready for human review.",
+    "source_ids": ["SRC-001"],
+    "status": "draft"
+  }
+}

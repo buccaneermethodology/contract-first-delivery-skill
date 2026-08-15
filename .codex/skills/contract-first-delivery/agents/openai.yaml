@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contract First Delivery"
+  short_description: "Freeze contracts before implementation begins"
+  default_prompt: "Use $contract-first-delivery to freeze a minimal contract package and acceptance boundary before implementation."

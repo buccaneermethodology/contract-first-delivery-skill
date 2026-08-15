@@ -1,0 +1,22 @@
+{
+  "goal": "Produce a versioned summary artifact from an explicit request.",
+  "non_goals": [
+    "Send the artifact to external systems",
+    "Infer approval from successful generation"
+  ],
+  "users": ["artifact authors", "artifact reviewers"],
+  "target_workflows": ["draft", "review", "accept or revise"],
+  "system_boundary": {
+    "inside": ["request validation", "summary generation", "artifact serialization"],
+    "outside": ["delivery", "approval", "publication"]
+  },
+  "compatibility_target": "Python 3.9+ and JSON Schema draft 2020-12 documents",
+  "technical_constraints": ["standard-library runtime", "deterministic JSON output"],
+  "rollout_stages": ["contract review", "local implementation", "integration trial"],
+  "quality_gates": ["contract package validation", "unit tests", "human golden review"],
+  "test_strategy": ["positive fixture", "invalid input", "golden comparison"],
+  "change_control": {
+    "contract_changes_require": ["versioned diff", "review", "updated examples"],
+    "implementation_must_not_redefine": ["goal", "approval authority", "error semantics"]
+  }
+}

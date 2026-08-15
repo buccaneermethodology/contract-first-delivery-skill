@@ -1,0 +1,22 @@
+name: validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run package tests
+        run: python3 tests/run_tests.py
+      - name: Validate positive example
+        run: python3 scripts/validate_contract_package.py examples/minimal-contract
+      - name: Compile Python sources
+        run: python3 -m py_compile scripts/*.py tests/*.py
+      - name: Validate Skill package shape
+        run: python3 tests/validate_skill_shape.py .codex/skills/contract-first-delivery

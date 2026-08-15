@@ -1,0 +1,14 @@
+{
+  "purpose": "Convert a validated request into a structured summary artifact.",
+  "inputs": [{"name": "request", "type": "object", "required": true}],
+  "outputs": [{"name": "summary_artifact", "schema": "artifact.schema.json"}],
+  "dependencies": ["artifact.schema.json"],
+  "state_changes": ["none"],
+  "errors": [
+    {"code": "INVALID_REQUEST", "condition": "request_id or summary is absent"}
+  ],
+  "validation_surface": ["schema validation", "golden review"],
+  "constraints": ["do not publish", "do not infer approval"],
+  "non_goals": ["external delivery", "semantic approval"],
+  "downstream_consumers": ["review interface", "archive adapter"]
+}
