@@ -1,7 +1,7 @@
 {
   "package_name": "contract-first-delivery-skill",
   "skill_name": "contract-first-delivery",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "license": "MIT",
   "source_provenance": {
     "kind": "generalized-project-practice",

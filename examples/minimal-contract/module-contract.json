@@ -10,5 +10,10 @@
   "validation_surface": ["schema validation", "golden review"],
   "constraints": ["do not publish", "do not infer approval"],
   "non_goals": ["external delivery", "semantic approval"],
-  "downstream_consumers": ["review interface", "archive adapter"]
+  "downstream_consumers": ["review interface", "archive adapter"],
+  "implementation_slices": [
+    {"id": "SLICE-1", "covers": ["MH-001"], "depends_on": [], "readiness": "ready", "outcome": "Request validation and deterministic error behavior."},
+    {"id": "SLICE-2", "covers": ["MH-002"], "depends_on": ["SLICE-1"], "readiness": "ready_after_dependencies", "outcome": "Schema-valid draft artifact generation."},
+    {"id": "SLICE-3", "covers": ["MH-003"], "depends_on": ["SLICE-2"], "readiness": "ready_after_dependencies", "outcome": "Approval-boundary regression and closeout evidence."}
+  ]
 }

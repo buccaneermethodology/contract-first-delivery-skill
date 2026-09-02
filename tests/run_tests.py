@@ -92,6 +92,41 @@ def main() -> int:
             lambda package: (package / "acceptance-policy.json").unlink(),
         ),
         (
+            "missing session completion",
+            "CFD-MISSING-SESSION-COMPLETION",
+            lambda package: rewrite_json(
+                package / "constitution.json", lambda value: value.pop("session_completion")
+            ),
+        ),
+        (
+            "slice plan leaves an original must-have uncovered",
+            "CFD-INCOMPLETE-SLICE-PLAN",
+            lambda package: rewrite_json(
+                package / "module-contract.json",
+                lambda value: value["implementation_slices"].pop(),
+            ),
+        ),
+        (
+            "slice depends on a later slice",
+            "CFD-INCOMPLETE-SLICE-PLAN",
+            lambda package: rewrite_json(
+                package / "module-contract.json",
+                lambda value: value["implementation_slices"][0].update(
+                    depends_on=["SLICE-2"]
+                ),
+            ),
+        ),
+        (
+            "closeout omits Session terminal state",
+            "CFD-MISSING-ACCEPTANCE-POLICY",
+            lambda package: rewrite_json(
+                package / "acceptance-policy.json",
+                lambda value: value["required_closeout_fields"].remove(
+                    "session_terminal"
+                ),
+            ),
+        ),
+        (
             "acceptance categories collapse",
             "CFD-MISSING-ACCEPTANCE-POLICY",
             lambda package: rewrite_json(

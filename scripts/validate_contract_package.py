@@ -30,6 +30,7 @@ CONSTITUTION_KEYS = {
     "rollout_stages",
     "quality_gates",
     "test_strategy",
+    "session_completion",
     "change_control",
 }
 CONTRACT_KEYS = {
@@ -43,6 +44,22 @@ CONTRACT_KEYS = {
     "constraints",
     "non_goals",
     "downstream_consumers",
+    "implementation_slices",
+}
+COMPLETION_KEYS = {
+    "must_haves",
+    "completion_rule",
+    "continuation_rule",
+    "allowed_termination_conditions",
+    "scope_delta_policy",
+}
+REQUIRED_CLOSEOUT_FIELDS = {
+    "slice_verdict",
+    "session_terminal",
+    "remaining_must_haves",
+    "scope_delta",
+    "next_slice",
+    "human_decision_required",
 }
 
 
@@ -81,6 +98,96 @@ def matches_type(value: Any, expected: str) -> bool:
     if expected == "null":
         return value is None
     return False
+
+
+def is_non_empty_string(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def validate_completion_plan(
+    constitution: Any, contract: Any, findings: List[Finding]
+) -> None:
+    completion = (
+        constitution.get("session_completion") if isinstance(constitution, dict) else None
+    )
+    completion_valid = isinstance(completion, dict) and COMPLETION_KEYS <= set(completion)
+    must_have_ids: List[str] = []
+    if completion_valid:
+        must_haves = completion.get("must_haves")
+        completion_valid = isinstance(must_haves, list) and bool(must_haves)
+        if completion_valid:
+            completion_valid = all(
+                isinstance(item, dict)
+                and is_non_empty_string(item.get("id"))
+                and is_non_empty_string(item.get("requirement"))
+                and is_non_empty_string(item.get("acceptance"))
+                for item in must_haves
+            )
+            if completion_valid:
+                must_have_ids = [item["id"] for item in must_haves]
+                completion_valid = len(must_have_ids) == len(set(must_have_ids))
+        termination = completion.get("allowed_termination_conditions")
+        completion_valid = (
+            completion_valid
+            and is_non_empty_string(completion.get("completion_rule"))
+            and is_non_empty_string(completion.get("continuation_rule"))
+            and isinstance(termination, list)
+            and bool(termination)
+            and all(is_non_empty_string(item) for item in termination)
+            and is_non_empty_string(completion.get("scope_delta_policy"))
+        )
+    if not completion_valid:
+        findings.append(
+            (
+                "CFD-MISSING-SESSION-COMPLETION",
+                "session completion must preserve unique must-haves with acceptance evidence, completion and continuation rules, allowed termination conditions, and Scope Delta policy",
+            )
+        )
+
+    slices = contract.get("implementation_slices") if isinstance(contract, dict) else None
+    slices_valid = isinstance(slices, list) and bool(slices)
+    slice_ids: List[str] = []
+    covered: List[str] = []
+    if slices_valid:
+        known_ids: set[str] = set()
+        for index, item in enumerate(slices):
+            item_valid = (
+                isinstance(item, dict)
+                and is_non_empty_string(item.get("id"))
+                and isinstance(item.get("covers"), list)
+                and bool(item.get("covers"))
+                and all(is_non_empty_string(value) for value in item.get("covers", []))
+                and isinstance(item.get("depends_on"), list)
+                and all(is_non_empty_string(value) for value in item.get("depends_on", []))
+                and item.get("readiness") in {"ready", "ready_after_dependencies", "blocked"}
+                and is_non_empty_string(item.get("outcome"))
+            )
+            if not item_valid:
+                slices_valid = False
+                continue
+            slice_id = item["id"]
+            dependencies = item["depends_on"]
+            if slice_id in known_ids or slice_id in dependencies:
+                slices_valid = False
+            if any(dependency not in known_ids for dependency in dependencies):
+                slices_valid = False
+            if index == 0 and item["readiness"] != "ready":
+                slices_valid = False
+            known_ids.add(slice_id)
+            slice_ids.append(slice_id)
+            covered.extend(item["covers"])
+        if completion_valid and (
+            set(covered) != set(must_have_ids)
+            or any(item not in set(must_have_ids) for item in covered)
+        ):
+            slices_valid = False
+    if not slices_valid or len(slice_ids) != len(set(slice_ids)):
+        findings.append(
+            (
+                "CFD-INCOMPLETE-SLICE-PLAN",
+                "ordered implementation slices must be valid, depend only on earlier slices, and collectively cover every original must-have without unknown references",
+            )
+        )
 
 
 def validate_instance(instance: Any, schema: Any, location: str = "$") -> List[str]:
@@ -157,6 +264,8 @@ def validate_package(package_dir: Path) -> List[Finding]:
             "module contract",
             findings,
         )
+    if loaded.get("constitution") is not None and loaded.get("contract") is not None:
+        validate_completion_plan(loaded["constitution"], loaded["contract"], findings)
 
     schema = loaded.get("schema")
     if schema is not None:
@@ -202,6 +311,9 @@ def validate_package(package_dir: Path) -> List[Finding]:
         blocking = acceptance.get("blocking_checks") if isinstance(acceptance, dict) else None
         advisory = acceptance.get("advisory_checks") if isinstance(acceptance, dict) else None
         ceiling = acceptance.get("claim_ceiling") if isinstance(acceptance, dict) else None
+        closeout = (
+            acceptance.get("required_closeout_fields") if isinstance(acceptance, dict) else None
+        )
         valid_lists = isinstance(blocking, list) and bool(blocking) and isinstance(advisory, list)
         ids: List[str] = []
         if valid_lists:
@@ -214,11 +326,21 @@ def validate_package(package_dir: Path) -> List[Finding]:
             )
             if valid_lists:
                 ids = [item["id"] for item in entries]
-        if not valid_lists or len(ids) != len(set(ids)) or not isinstance(ceiling, str) or not ceiling:
+        closeout_valid = (
+            isinstance(closeout, list)
+            and all(is_non_empty_string(item) for item in closeout)
+            and REQUIRED_CLOSEOUT_FIELDS <= set(closeout)
+        )
+        if (
+            not valid_lists
+            or len(ids) != len(set(ids))
+            or not is_non_empty_string(ceiling)
+            or not closeout_valid
+        ):
             findings.append(
                 (
                     "CFD-MISSING-ACCEPTANCE-POLICY",
-                    "acceptance policy must separate blocking/advisory checks, use unique IDs, and state a claim ceiling",
+                    "acceptance policy must separate blocking/advisory checks, use unique IDs, state a claim ceiling, and require separate slice and Session closeout fields",
                 )
             )
 

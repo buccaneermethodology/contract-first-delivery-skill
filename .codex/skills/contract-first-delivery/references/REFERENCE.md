@@ -1,8 +1,21 @@
 # Contract First Delivery Reference
 
+## Contents
+
+1. Purpose and fit
+2. Core concepts and authority
+3. End-to-end workflow
+4. Package and file contracts
+5. Running the example
+6. Finding codes and failure behavior
+7. Positive, negative, blocking, and advisory checks
+8. Progressive adoption and integration
+9. Provenance and evidence ceiling
+10. Maintenance, extension, and compatibility
+
 ## 1. Purpose and fit
 
-Contract-first delivery turns ambiguous implementation work into a bounded, reviewable package before code is written. It is useful when a module has structured inputs or outputs, compatibility obligations, meaningful error behavior, authority boundaries, high-cost rework, or model-generated artifacts whose shape alone cannot establish correctness.
+Contract-first delivery turns ambiguous implementation work into a bounded, reviewable package before code is written. It preserves the full task or Session completion boundary before dividing work into implementation slices. It is useful when a module has structured inputs or outputs, compatibility obligations, meaningful error behavior, authority boundaries, high-cost rework, multi-slice delivery, or model-generated artifacts whose shape alone cannot establish correctness.
 
 Use it for:
 
@@ -36,6 +49,14 @@ A golden captures a reviewed semantic expectation that schema alone cannot judge
 
 Blocking checks prevent implementation entry or acceptance. Advisory checks preserve useful observations without turning every improvement into a failure. Their identifiers must remain distinct and their evidence ceiling must be explicit.
 
+### Session completion contract
+
+The Session completion contract preserves the original must-have ledger, the evidence required for each item, the full completion rule, the rule for continuing after a slice, allowed termination conditions, and Scope Delta authority. It determines whether the whole task or Session is terminal.
+
+### Implementation slice plan
+
+The implementation slice plan is an ordered execution strategy. Every slice maps to one or more original must-haves and names its dependencies, readiness, and observable outcome. The first safe slice determines where implementation starts; it does not redefine where the Session ends.
+
 ### Non-collapsible boundaries
 
 - A passing schema is not semantic approval.
@@ -43,20 +64,24 @@ Blocking checks prevent implementation entry or acceptance. Advisory checks pres
 - An implementation decision is not a goal or authority decision.
 - An advisory observation is not automatically blocking.
 - A validator report is evidence, not publication or production authority.
+- A passing slice is not a terminal Session verdict.
+- A smaller slice contract cannot replace the original must-have ledger.
+- Deferring or transferring a must-have is a Scope Delta, not ordinary closeout bookkeeping.
 
 ## 3. End-to-end workflow
 
 1. Intake the request and identify the person or artifact authorized to define the goal.
-2. Write the constitution and resolve ambiguity in goal, non-goals, boundary, compatibility, rollout, testing, and change control.
+2. Write the constitution and resolve ambiguity in goal, original must-haves, non-goals, boundary, compatibility, rollout, testing, full completion, allowed termination, Scope Delta, and change control.
 3. Write the module contract and make inputs, outputs, state changes, errors, validation, constraints, and consumers observable.
 4. Define the output schema before implementing a producer.
 5. Add a passing example grounded in representative input.
 6. Add a manual golden when semantic meaning cannot be decided from shape alone. Record source identity, review status, decision notes, and that it was not candidate-generated.
 7. Define blocking and advisory acceptance checks plus the maximum supported claim.
-8. Run the validator. Treat any `CFD-*` finding other than `CFD-VALID` as blocking for the bundled package.
-9. Name the smallest implementation slice that consumes the declared input and produces the declared output without widening authority.
-10. Implement and test only that slice. If the contract changes, version and re-review the contract package before relying on new behavior.
-11. At closeout, report what the evidence proves, what it does not prove, and what remains for later integration or operational validation.
+8. Map ordered implementation slices to the complete must-have ledger. Require every original must-have to be covered and every dependency to point to an earlier slice.
+9. Run the validator. Treat any `CFD-*` finding other than `CFD-VALID` as blocking for the bundled package.
+10. Implement and test the smallest ready slice without narrowing the original completion contract. If the contract changes, version and re-review the contract package before relying on new behavior.
+11. After each slice, re-evaluate the original ledger. Continue automatically to the next ready slice while the completion rule is unsatisfied and neither a required human decision nor a verified blocker prevents progress.
+12. At closeout, report `slice_verdict`, `session_terminal`, `remaining_must_haves`, `scope_delta`, `next_slice`, and `human_decision_required`. Validate both the landed slice and the original Session definition.
 
 ## 4. Package and file contracts
 
@@ -84,13 +109,24 @@ Required keys:
 - `rollout_stages`: staged adoption sequence;
 - `quality_gates`: checks required before progression;
 - `test_strategy`: positive, negative, regression, or review surfaces;
+- `session_completion`: original must-haves with acceptance evidence, full completion and continuation rules, allowed termination conditions, and Scope Delta policy;
 - `change_control`: how contract changes are proposed and approved.
 
 `target_workflows` is recommended but not required by the validator.
 
 ### `module-contract.json`
 
-Required keys are `purpose`, `inputs`, `outputs`, `dependencies`, `state_changes`, `errors`, `validation_surface`, `constraints`, `non_goals`, and `downstream_consumers`. Consumers belong in the contract because seemingly local output changes can break external readers.
+Required keys are `purpose`, `inputs`, `outputs`, `dependencies`, `state_changes`, `errors`, `validation_surface`, `constraints`, `non_goals`, `downstream_consumers`, and `implementation_slices`. Consumers belong in the contract because seemingly local output changes can break external readers.
+
+Each implementation slice requires:
+
+- a unique `id`;
+- one or more `covers` references to original must-have IDs;
+- `depends_on` references only to earlier slices;
+- `readiness` of `ready`, `ready_after_dependencies`, or `blocked`;
+- a non-empty observable `outcome`.
+
+The first slice must be ready. Collectively, the slices must cover every original must-have and must not reference unknown must-haves. The validator checks coverage and ordering, not whether the plan is the best possible decomposition.
 
 ### `artifact.schema.json`
 
@@ -115,7 +151,7 @@ These fields make provenance explicit; they cannot prove the reviewer had the ri
 
 ### `acceptance-policy.json`
 
-`blocking_checks` must be a non-empty list, `advisory_checks` must be a list, each entry needs a unique `id` and a `rule`, and `claim_ceiling` must be non-empty. A project can add fields, but it should not allow a profile or formatter to downgrade a blocking result.
+`blocking_checks` must be a non-empty list, `advisory_checks` must be a list, each entry needs a unique `id` and a `rule`, and `claim_ceiling` must be non-empty. `required_closeout_fields` must include separate slice and Session verdicts, remaining must-haves, Scope Delta, next slice, and human-decision state. A project can add fields, but it should not allow a profile or formatter to downgrade a blocking result.
 
 ## 5. Running the example
 
@@ -160,6 +196,8 @@ CI also runs `tests/validate_skill_shape.py`, a dependency-free compatibility ch
 | `CFD-PACKAGE-NOT-FOUND` | The supplied directory does not exist. | Pass the package directory explicitly. |
 | `CFD-MISSING-CONSTITUTION` | The constitution is absent, unreadable, not an object, or lacks required boundaries. | Complete and review the constitution before coding. |
 | `CFD-MISSING-CONTRACT` | The module contract is absent, unreadable, not an object, or incomplete. | Define observable module behavior and consumers. |
+| `CFD-MISSING-SESSION-COMPLETION` | The original must-have ledger, completion or continuation rule, termination conditions, or Scope Delta policy is missing or malformed. | Restore the full Session completion contract before slicing work. |
+| `CFD-INCOMPLETE-SLICE-PLAN` | Slices are malformed, depend on later slices, or fail to cover the original ledger. | Repair the ordered plan without deleting or transferring original must-haves. |
 | `CFD-INVALID-SCHEMA` | The schema is absent, unreadable, or outside the supported structural subset. | Repair the schema or use a full validator for advanced keywords. |
 | `CFD-EXAMPLE-SCHEMA-MISMATCH` | The example is absent, unreadable, or violates the schema. | Repair the example or review the schema intentionally. |
 | `CFD-UNTRUSTED-GOLDEN` | The golden lacks manual provenance, comes from the candidate, lacks notes, or violates the schema. | Restore an independently reviewed, source-linked oracle. |
@@ -180,18 +218,23 @@ Common mistakes include:
 - using a generated output as the golden because it “looks right”;
 - listing checks without saying which ones block;
 - changing a schema without updating example, golden, and consumers;
+- defining only the first slice and using its local acceptance criteria as the Session completion rule;
+- marking a Session done while `remaining_must_haves` is non-empty;
+- moving unfinished must-haves to another Session without an explicitly approved Scope Delta;
 - reporting `CFD-VALID` as business approval or production readiness.
 
 ## 8. Progressive adoption and integration
 
-Adopt the method in small steps:
+Adopt the method in small implementation steps while preserving the full completion boundary:
 
-1. Start with constitution and module contract for one risky slice.
+1. Start with the original goal, complete must-have ledger, full completion rule, and module boundary.
 2. Add schema and a valid example when the output is structured.
 3. Add a golden only where semantic review adds material value.
-4. Add acceptance policy and the validator to local development.
-5. Add the tests and validator to CI after the contract stabilizes.
-6. Version contract changes and notify downstream consumers.
+4. Map the smallest ready slice and all later slices to the original ledger.
+5. Add acceptance policy and the validator to local development.
+6. Add the tests and validator to CI after the contract stabilizes.
+7. Recheck remaining must-haves after every slice; continue unless an allowed termination condition applies.
+8. Version contract changes and notify downstream consumers.
 
 For an existing codebase, document current behavior as a compatibility baseline before proposing a target contract. Mark mismatches as observed legacy behavior, intended migration, or unresolved decision. Do not rewrite history by describing target behavior as already implemented.
 
@@ -209,13 +252,17 @@ It does not support claims that the package is semantically correct for a partic
 
 ## 10. Maintenance, extension, and compatibility
 
-Treat the six filenames, stable finding codes, and process exit behavior as the v1 compatibility surface. Additive fields are safe when older consumers ignore them. Renaming files, changing code meanings, weakening a blocking check, or expanding the supported schema dialect requires a documented version decision and updated examples/tests.
+Version 2 retains the six filenames and all v1 finding meanings, but intentionally requires new completion-discipline fields. A v1 package without `session_completion`, `implementation_slices`, and `required_closeout_fields` now fails closed and must migrate before using the v2 validator. This is a breaking validation change rather than an additive documentation clarification.
+
+Treat the six filenames, stable finding meanings, and process exit behavior as the v2 compatibility surface. Additive fields are safe when older consumers ignore them. Renaming files, changing code meanings, weakening a blocking check, or expanding the supported schema dialect requires a documented version decision and updated examples/tests.
 
 When extending the validator:
 
 - add one positive or negative fixture for each new behavior;
 - keep errors deterministic and source-local;
 - preserve blocking/advisory separation;
+- preserve the distinction between a slice verdict and a Session terminal verdict;
+- add negative coverage for any new completion or cross-slice rule;
 - document unsupported schema features instead of partially accepting them;
 - update the reference and CI in the same change;
 - avoid external dependencies unless their installation and version policy are explicit.

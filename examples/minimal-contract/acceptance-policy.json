@@ -6,5 +6,13 @@
   "advisory_checks": [
     {"id": "wording", "rule": "Review concise wording for the target audience."}
   ],
+  "required_closeout_fields": [
+    "slice_verdict",
+    "session_terminal",
+    "remaining_must_haves",
+    "scope_delta",
+    "next_slice",
+    "human_decision_required"
+  ],
   "claim_ceiling": "Passing checks establishes structural completeness and declared relationships only, not semantic truth or production readiness."
 }

@@ -1,4 +1,4 @@
 interface:
   display_name: "Contract First Delivery"
-  short_description: "Freeze contracts before implementation begins"
-  default_prompt: "Use $contract-first-delivery to freeze a minimal contract package and acceptance boundary before implementation."
+  short_description: "Freeze full scope before bounded implementation"
+  default_prompt: "Use $contract-first-delivery to preserve the full completion boundary, map all must-haves to ordered slices, and validate the contract before implementation."

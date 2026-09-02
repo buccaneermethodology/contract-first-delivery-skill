@@ -15,6 +15,17 @@
   "rollout_stages": ["contract review", "local implementation", "integration trial"],
   "quality_gates": ["contract package validation", "unit tests", "human golden review"],
   "test_strategy": ["positive fixture", "invalid input", "golden comparison"],
+  "session_completion": {
+    "must_haves": [
+      {"id": "MH-001", "requirement": "Validate an explicit request before generation.", "acceptance": "Invalid requests fail with INVALID_REQUEST."},
+      {"id": "MH-002", "requirement": "Produce a schema-valid draft summary with source identifiers.", "acceptance": "The positive fixture and manual golden satisfy artifact.schema.json."},
+      {"id": "MH-003", "requirement": "Preserve human approval authority.", "acceptance": "Generated output remains draft and no implementation path publishes or approves it."}
+    ],
+    "completion_rule": "All original must-haves pass their acceptance evidence with no unapproved Scope Delta.",
+    "continuation_rule": "After each slice, continue to the next ready slice while the completion rule is unsatisfied and no human decision or verified blocker prevents progress.",
+    "allowed_termination_conditions": ["all must-haves complete", "explicit human decision required", "verified blocker"],
+    "scope_delta_policy": "Deleting, weakening, deferring, or transferring an original must-have requires explicit human approval before completion."
+  },
   "change_control": {
     "contract_changes_require": ["versioned diff", "review", "updated examples"],
     "implementation_must_not_redefine": ["goal", "approval authority", "error semantics"]
